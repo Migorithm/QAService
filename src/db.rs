@@ -1,21 +1,23 @@
-use super::models::{Question, QuestionId};
-use std::{borrow::BorrowMut, collections::HashMap, sync::Arc};
+use std::{collections::HashMap, hash::Hash, sync::Arc};
+
+use crate::models::{Answer, AnswerId, Question, QuestionId};
 use tokio::sync::RwLock;
 
 #[derive(Clone)]
 pub struct Store {
-    pub(crate) questions: Arc<RwLock<HashMap<QuestionId, Question>>>,
+    pub questions: Arc<RwLock<HashMap<QuestionId, Question>>>,
+    pub answers: Arc<RwLock<HashMap<AnswerId, Answer>>>,
 }
 
 impl Store {
     pub fn new() -> Self {
         Store {
             questions: Arc::new(RwLock::new(Self::init())),
+            answers: Arc::new(RwLock::new(HashMap::new())),
         }
     }
-
     fn init() -> HashMap<QuestionId, Question> {
         let file = include_str!("../questions.json");
-        serde_json::from_str(file).expect("Can't read questions.json")
+        serde_json::from_str(file).expect("Not Parserable Object!")
     }
 }
