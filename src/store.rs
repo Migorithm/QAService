@@ -1,6 +1,9 @@
-use std::{collections::HashMap, hash::Hash, sync::Arc};
+use std::{collections::HashMap, sync::Arc};
 
-use crate::models::{Answer, AnswerId, Question, QuestionId};
+use crate::types::{
+    answer::{Answer, AnswerId},
+    question::{Question, QuestionId},
+};
 use tokio::sync::RwLock;
 
 #[derive(Clone)]
@@ -19,5 +22,11 @@ impl Store {
     fn init() -> HashMap<QuestionId, Question> {
         let file = include_str!("../questions.json");
         serde_json::from_str(file).expect("Not Parserable Object!")
+    }
+}
+
+impl Default for Store {
+    fn default() -> Self {
+        Self::new()
     }
 }
