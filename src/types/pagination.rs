@@ -2,6 +2,7 @@ use std::collections::HashMap;
 
 use handle_errors::Error;
 
+#[derive(Debug)]
 pub struct Pagination {
     pub start: usize,
     pub end: usize,
