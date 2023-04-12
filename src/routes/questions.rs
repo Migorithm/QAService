@@ -10,21 +10,23 @@ use handle_errors::Error;
 use serde::Serialize;
 use std::{collections::HashMap, hash::Hash};
 use warp::hyper::StatusCode;
+use tracing::{instrument, info};
 
+#[instrument]
 pub(crate) async fn get_questions(
     store: Store,
     params: HashMap<String, i32>,
 ) -> Result<impl warp::Reply, warp::Rejection> {
-    log::info!("Start querying questions");
+    info!("querying questions");
     if !params.is_empty() {
         let pagination = extract_pagination(params).map_err(|_| Error::NotParsable)?;
-        log::info!("Pagination set {:?}", &pagination);
+        info!(pagination = true);
 
         let res: Vec<Question> = store.questions.read().await.values().cloned().collect();
         let res = &res[pagination.start..pagination.end];
         Ok(warp::reply::json(&res))
     } else {
-        log::info!("No pagination used");
+        info!(pagination = false);
         let res: Vec<Question> = store.questions.read().await.values().cloned().collect();
         Ok(warp::reply::json(&res))
     }
