@@ -5,23 +5,19 @@ mod types;
 use crate::types::question::QuestionId;
 use handle_errors::return_error;
 use warp::Filter;
-
+use tracing_subscriber::fmt::format::FmtSpan; // fmt subscriber, which is meant to format and log events to the console. 
 //error handler
 
 #[tokio::main]
 async fn main() {
-    log4rs::init_file("log4rs.yaml", Default::default()).unwrap();
-    let log =
-        warp::log::custom(|info| 
-            log::info!("{} {} {} {:?}",
-            info.method(),
-            info.path(),
-            info.status(),
-            info.elapsed(),
-        ));
-        
-    log::info!("This is an info!");
-    log::error!("This is an error!");
+    let log_filter = std::env::var("RUST_LOG").unwrap_or_else(|_| "web-test=info,warp=info".to_owned());
+
+    
+    tracing_subscriber::fmt()
+        .with_env_filter(log_filter)
+        .with_span_events(FmtSpan::CLOSE) // which indicates that our subscriber will also log the closing of spans.
+        .init();
+
 
     println!("Server starts...");
     let store = store::Store::default();
@@ -87,7 +83,7 @@ async fn main() {
         .or(delete_question)
         .or(add_answer)
         .with(cors)
-        .with(log)
+        .with(warp::trace::request())
         .recover(return_error);
 
     warp::serve(routes).run(([127, 0, 0, 1], 3030)).await
