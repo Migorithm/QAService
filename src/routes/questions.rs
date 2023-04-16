@@ -31,7 +31,7 @@ pub(crate) async fn get_questions(
         .await
     {
         Ok(res) => res,
-        Err(e) => return Err(warp::reject::custom(Error::DatabaseQueryError(e))),
+        Err(e) => return Err(warp::reject::custom(e)),
     };
     // Return response
     Ok(warp::reply::json(&res))
@@ -43,11 +43,11 @@ pub(crate) async fn get_question(
 ) -> Result<impl warp::Reply, warp::Rejection> {
     let mut res = HashMap::new();
 
-    let question = match store.get_question(&id).await {
+    let question = match store.get_question(id).await {
         Ok(question) => question,
         Err(e) => return Err(warp::reject::custom(e)),
     };
-    res.insert(id.0.to_string(), QuestionReturn::Question(&question));
+    res.insert(id.to_string(), QuestionReturn::Question(&question));
 
     if let Ok(answers) = store.get_answers(id).await {
         res.insert("answers".to_string(), QuestionReturn::Answers(answers));
@@ -61,7 +61,7 @@ pub(crate) async fn add_question(
     question: NewQuestion,
 ) -> Result<impl warp::Reply, warp::Rejection> {
     match store.add_question(question).await {
-        Ok(question) => Ok(warp::reply::with_status("Question Added", StatusCode::Ok)),
+        Ok(question) => Ok(warp::reply::with_status("Question Added", StatusCode::OK)),
         Err(e) => Err(warp::reject::custom(e)),
     }
 }
@@ -71,10 +71,10 @@ pub(crate) async fn update_question(
     store: Store,
     question: Question,
 ) -> Result<impl warp::Reply, warp::Rejection> {
-    match store.questions.write().await.get_mut(&QuestionId(id)) {
-        Some(q) => *q = question,
-        None => return Err(warp::reject::custom(Error::QuestionNotFound)),
-    }
+    if let Err(_) = store.update_question(id, question).await {
+        return Err(warp::reject::custom(Error::QuestionNotFound));
+    };
+
     Ok(warp::reply::with_status("Question Updated", StatusCode::OK))
 }
 
@@ -82,13 +82,10 @@ pub(crate) async fn delete_question(
     id: i32,
     store: Store,
 ) -> Result<impl warp::Reply, warp::Rejection> {
-    match store.questions.write().await.remove(&QuestionId(id)) {
-        Some(_) => Ok(warp::reply::with_status(
-            "Question Deleted!",
-            StatusCode::OK,
-        )),
-        None => Err(warp::reject::custom(Error::QuestionNotFound)),
+    if let Err(e) = store.delete_question(id).await {
+        return Err(warp::reject::custom(e));
     }
+    Ok(warp::reply::with_status("Question Deleted", StatusCode::OK))
 }
 
 #[derive(Serialize, Hash, Eq, PartialEq)]

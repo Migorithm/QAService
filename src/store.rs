@@ -1,6 +1,7 @@
 use sqlx::postgres::{PgPool, PgPoolOptions, PgRow};
 use sqlx::Row;
 
+use crate::types::question;
 use crate::types::{
     answer::{Answer, AnswerId},
     question::{NewQuestion, Question, QuestionId},
@@ -108,6 +109,46 @@ impl Store {
         {
             Ok(question) => Ok(question),
             Err(e) => Err(Error::DatabaseQueryError(e)),
+        }
+    }
+
+    pub async fn update_question(&self, id: i32, question: Question) -> Result<Question, Error> {
+        match sqlx::query(
+            "UPDATE questions 
+                 SET title = $1,
+                    content = $2,
+                    tags = $3
+                 WHERE id = $4 
+                 RETURNING id,title,content,tags",
+        )
+        .bind(question.title)
+        .bind(question.content)
+        .bind(question.tags)
+        .bind(id)
+        .map(|row: PgRow| Question {
+            id: QuestionId(row.get("id")),
+            title: row.get("title"),
+            content: row.get("content"),
+            tags: row.get("tags"),
+        })
+        .fetch_one(&self.connection)
+        .await
+        {
+            Ok(question) => Ok(question),
+            Err(e) => Err(Error::DatabaseQueryError(e)),
+        }
+    }
+
+    pub async fn delete_question(&self, id: i32) -> Result<bool, Error> {
+        match sqlx::query(
+            "DELETE FROM questions WHERE id = $1",
+        )
+        .bind(id)
+        .execute(&self.connection)
+        .await
+        {
+            Ok(_) => Ok(true),
+            Err(e) => Err(e),
         }
     }
 }
