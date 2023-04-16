@@ -5,15 +5,15 @@ use serde::{Deserialize, Serialize};
 pub struct Answer {
     pub id: AnswerId,
     pub content: String,
-    pub question_id: QuestionId,
+    pub corresponding_question: QuestionId,
 }
 
 impl Answer {
-    pub fn new(id: i32, content: &str, question_id: QuestionId) -> Self {
+    pub fn new(id: i32, content: &str, corresponding_question: QuestionId) -> Self {
         Self {
             id: AnswerId(id),
             content: content.to_string(),
-            question_id,
+            corresponding_question,
         }
     }
 }

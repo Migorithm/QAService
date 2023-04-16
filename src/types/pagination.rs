@@ -30,9 +30,11 @@ pub fn extract_pagination(params: HashMap<String, i32>) -> Result<Pagination, Er
     }
 }
 
-
-impl Default for Pagination{
+impl Default for Pagination {
     fn default() -> Self {
-        Self { limit: None, offset: 0 }
+        Self {
+            limit: None,
+            offset: 0,
+        }
     }
 }

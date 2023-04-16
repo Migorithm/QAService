@@ -20,14 +20,16 @@ impl FromStr for QuestionId {
     type Err = std::io::Error;
     fn from_str(id: &str) -> Result<Self, Self::Err> {
         match id.is_empty() {
-            false => Ok(Self(id.parse::<i32>().map_err( |_| Error::new(ErrorKind::InvalidInput, "Wrong Id Given"))?)),
+            false => Ok(Self(id.parse::<i32>().map_err(|_| {
+                Error::new(ErrorKind::InvalidInput, "Wrong Id Given")
+            })?)),
             true => Err(Error::new(ErrorKind::InvalidInput, "No id provided")),
         }
     }
 }
 
-#[derive(Deserialize,Serialize,Debug,Clone)]
-pub struct NewQuestion{
+#[derive(Deserialize, Serialize, Debug, Clone)]
+pub struct NewQuestion {
     pub title: String,
     pub content: String,
     pub tags: Option<Vec<String>>,

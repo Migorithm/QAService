@@ -4,20 +4,19 @@ mod types;
 
 use crate::types::question::QuestionId;
 use handle_errors::return_error;
-use warp::Filter;
-use tracing_subscriber::fmt::format::FmtSpan; // fmt subscriber, which is meant to format and log events to the console. 
-//error handler
+use tracing_subscriber::fmt::format::FmtSpan;
+use warp::Filter; // fmt subscriber, which is meant to format and log events to the console.
+                  //error handler
 
 #[tokio::main]
-async fn main()->Result<(),sqlx::Error> {
-    let log_filter = std::env::var("RUST_LOG").unwrap_or_else(|_| "web-test=info,warp=info".to_owned());
+async fn main() -> Result<(), sqlx::Error> {
+    let log_filter =
+        std::env::var("RUST_LOG").unwrap_or_else(|_| "web-test=info,warp=info".to_owned());
 
-    
     tracing_subscriber::fmt()
         .with_env_filter(log_filter)
         .with_span_events(FmtSpan::CLOSE) // which indicates that our subscriber will also log the closing of spans.
         .init();
-
 
     println!("Server starts...");
     let store = store::Store::new("postgres://localhost:5432/rustwebdev").await;
@@ -87,5 +86,4 @@ async fn main()->Result<(),sqlx::Error> {
         .recover(return_error);
 
     warp::serve(routes).run(([127, 0, 0, 1], 3030)).await
-    
 }
