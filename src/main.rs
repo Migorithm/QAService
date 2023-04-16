@@ -9,7 +9,7 @@ use tracing_subscriber::fmt::format::FmtSpan; // fmt subscriber, which is meant 
 //error handler
 
 #[tokio::main]
-async fn main() {
+async fn main()->Result<(),sqlx::Error> {
     let log_filter = std::env::var("RUST_LOG").unwrap_or_else(|_| "web-test=info,warp=info".to_owned());
 
     
@@ -20,7 +20,7 @@ async fn main() {
 
 
     println!("Server starts...");
-    let store = store::Store::default();
+    let store = store::Store::new("postgres://localhost:5432/rustwebdev").await;
     let store_filter = warp::any().map(move || store.clone());
     let cors = warp::cors()
         .allow_any_origin()
@@ -55,7 +55,7 @@ async fn main() {
 
     let update_question = warp::put()
         .and(warp::path("questions"))
-        .and(warp::path::param::<String>())
+        .and(warp::path::param::<i32>())
         .and(warp::path::end())
         .and(store_filter.clone())
         .and(warp::body::json())
@@ -63,7 +63,7 @@ async fn main() {
 
     let delete_question = warp::delete()
         .and(warp::path("questions"))
-        .and(warp::path::param::<String>())
+        .and(warp::path::param::<i32>())
         .and(warp::path::end())
         .and(store_filter.clone())
         .and_then(routes::questions::delete_question);
@@ -87,4 +87,5 @@ async fn main() {
         .recover(return_error);
 
     warp::serve(routes).run(([127, 0, 0, 1], 3030)).await
+    
 }

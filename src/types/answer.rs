@@ -9,13 +9,13 @@ pub struct Answer {
 }
 
 impl Answer {
-    pub fn new(id: &str, content: &str, question_id: QuestionId) -> Self {
+    pub fn new(id: i32, content: &str, question_id: QuestionId) -> Self {
         Self {
-            id: AnswerId(id.to_string()),
+            id: AnswerId(id),
             content: content.to_string(),
             question_id,
         }
     }
 }
 #[derive(Default, Debug, Serialize, Clone, PartialEq, Eq, Hash, Deserialize)]
-pub struct AnswerId(pub String);
+pub struct AnswerId(pub i32);

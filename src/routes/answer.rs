@@ -7,7 +7,6 @@ use crate::{
 };
 use handle_errors::Error;
 use std::collections::HashMap;
-use uuid;
 use warp::hyper::StatusCode;
 
 pub(crate) async fn add_answer(
@@ -24,10 +23,10 @@ pub(crate) async fn add_answer(
         return Err(warp::reject::custom(Error::QuestionNotFound));
     }
 
-    let answer_id = uuid::Uuid::new_v4().to_string();
+    let answer_id = rand::random::<i32>();
     store.answers.write().await.insert(
-        AnswerId(answer_id.clone()),
-        Answer::new(&answer_id.clone(), content, question_id.clone()),
+        AnswerId(answer_id),
+        Answer::new(answer_id, content, question_id.clone()),
     );
     Ok(warp::reply::with_status(
         format!("Answer Created Against {question_id:?}!"),

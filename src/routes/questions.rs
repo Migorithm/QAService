@@ -1,4 +1,5 @@
-use crate::types::pagination::extract_pagination;
+use crate::types::pagination::{extract_pagination, Pagination};
+use crate::types::question::NewQuestion;
 use crate::{
     store::Store,
     types::{
@@ -8,6 +9,7 @@ use crate::{
 };
 use handle_errors::Error;
 use serde::Serialize;
+
 use std::{collections::HashMap, hash::Hash};
 use warp::hyper::StatusCode;
 use tracing::{instrument, info};
@@ -17,19 +19,23 @@ pub(crate) async fn get_questions(
     store: Store,
     params: HashMap<String, i32>,
 ) -> Result<impl warp::Reply, warp::Rejection> {
-    info!("querying questions");
-    if !params.is_empty() {
-        let pagination = extract_pagination(params).map_err(|_| Error::NotParsable)?;
-        info!(pagination = true);
+    
+    let mut pagination = Pagination::default();
 
-        let res: Vec<Question> = store.questions.read().await.values().cloned().collect();
-        let res = &res[pagination.start..pagination.end];
-        Ok(warp::reply::json(&res))
-    } else {
-        info!(pagination = false);
-        let res: Vec<Question> = store.questions.read().await.values().cloned().collect();
-        Ok(warp::reply::json(&res))
+    if !params.is_empty() {
+        pagination = extract_pagination(params)?;
+        info!(pagination = true);
     }
+    //Fetching 
+    let res: Vec<Question> = match store.get_questions(pagination.limit,pagination.offset).await{
+        Ok(res) => res,
+        Err(e) => {
+            return Err(warp::reject::custom(Error::DatabaseQueryError(e)))
+        }
+    }
+    // Return response
+    Ok(warp::reply::json(&res))
+    
 }
 
 pub(crate) async fn get_question(
@@ -57,21 +63,17 @@ pub(crate) async fn get_question(
 
 pub(crate) async fn add_question(
     store: Store,
-    question: Question,
+    question: NewQuestion,
 ) -> Result<impl warp::Reply, warp::Rejection> {
-    store
-        .questions
-        .write()
-        .await
-        .insert(question.id.clone(), question);
-    Ok(warp::reply::with_status(
-        "Question Added1",
-        warp::http::StatusCode::OK,
-    ))
+    match store.add_question(question) {
+        Ok(_) => warp::reply::with_status("Question Added!",warp::http::StatusCode::Ok),
+        Err(e) => warp::reject::custom(Error::DatabaseQueryError(e))
+    }
+
 }
 
 pub(crate) async fn update_question(
-    id: String,
+    id: i32,
     store: Store,
     question: Question,
 ) -> Result<impl warp::Reply, warp::Rejection> {
@@ -83,7 +85,7 @@ pub(crate) async fn update_question(
 }
 
 pub(crate) async fn delete_question(
-    id: String,
+    id: i32,
     store: Store,
 ) -> Result<impl warp::Reply, warp::Rejection> {
     match store.questions.write().await.remove(&QuestionId(id)) {

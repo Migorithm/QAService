@@ -2,6 +2,7 @@ use warp::cors::CorsForbidden;
 use warp::filters::body::BodyDeserializeError;
 use warp::hyper::StatusCode;
 use warp::reject::Reject;
+use sqlx::Error as SqlxError;
 
 #[derive(Debug)]
 pub enum Error {
@@ -9,6 +10,7 @@ pub enum Error {
     Missing,
     QuestionNotFound,
     ContentNotGiven,
+    DatabaseQueryError(SqlxError),
 }
 
 impl Reject for Error {}
@@ -20,6 +22,7 @@ impl std::fmt::Display for Error {
             Error::NotParsable => write!(f, "Parse Error!"),
             Error::QuestionNotFound => write!(f, "Question Not found!"),
             Error::ContentNotGiven => write!(f, "Content Not Given!"),
+            Error::DatabaseQueryError(ref e)=>write!(f,"Query could not be executed {}",e),
         }
     }
 }
